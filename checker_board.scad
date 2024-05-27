@@ -76,14 +76,15 @@ module l_grabber() {
   diff("l_grabber_main_cuts") {
      
      ymove((checker_data[0]/2+checker_data[2]+checker_data[3]/2)) {
-       zmove(checker_data[3]/2) xmove(-base_xlen/4+checker_data[4]/2) xcyl(r=checker_data[3], h=base_xlen/2-checker_data[4]);
+       zmove(checker_data[3]/2) xmove() xcyl(r=checker_data[3], h=base_xlen/4-checker_data[4]);
        xmove(-check_tol[0]) ymove(checker_data[4]*2-check_tol[0]*2) zmove(-(checker_data[3]-check_tol[0]*5)/4+check_tol[0]/2) cuboid([base_xlen-checker_data[4]*2-check_tol[0]*2, checker_data[4]*2+checker_data[3], checker_data[3]-check_tol[0]*4], rounding=check_tol[0]);
      }
      tag("l_grabber_main_cuts") {
        //the inner cut for the circ wedges
-       ymove((checker_data[0]/2+checker_data[2]+checker_data[3]/2)) zmove(checker_data[3]/2)  xcyl(r=checker_data[2]+(check_tol[0]/2), h=base_xlen+0.2);
+       ymove((checker_data[0]/2+checker_data[2]+checker_data[3]/2)) zmove(checker_data[3]/2)  xcyl(r=checker_data[2]+(check_tol[1]), h=base_xlen+0.2);
        //the big cut so that the turn piece can be slotted in
        ymove((checker_data[0]/2+checker_data[2]+checker_data[3]/2)) zmove(checker_data[3]/2) xmove((base_xlen/4+0.05)) xcyl(r=checker_data[3]+check_tol[1]*2, h=base_xlen/2+0.1+0.1);
+       ymove((checker_data[0]/2+checker_data[2]+checker_data[3]/2)) zmove(checker_data[3]/2) xmove(-(base_xlen/4+checker_data[4]+check_tol[1])) xcyl(r=checker_data[3]+check_tol[1]*2, h=base_xlen/2+0.1+0.1);
      }
    }
 }
@@ -131,6 +132,13 @@ module join_wedge_two_side(side="l", piece_side="l") {
   }
 }
 
+module join_wedge_grabber(side="l", grab_side="r") {
+  xrot((side=="l" ? 0 : 180)) yrot(90) {
+    pie_slice(r=checker_data[2]+(grab_side=="r" ? 0 : check_tol[0]/2), ang=180, h=(checker_data[0]+checker_data[1]-checker_data[4]*4-check_tol[0]*2)/2);
+    zmove((checker_data[0]+checker_data[1]-checker_data[4]*4-check_tol[0]*2)/2) pie_slice(r=checker_data[3]-check_tol[0]/2, ang=180, h=checker_data[4]);
+  }
+}
+
 module fully_joined_piece() {
 for (i=[1, -1]) {
   ymove(i*(checker_data[0]/2+checker_data[2]+checker_data[3]/2)) xmove(-checker_data[0]/4-checker_data[4]/2) zmove(checker_data[3]/2) {
@@ -140,17 +148,21 @@ for (i=[1, -1]) {
   }
 }
 
-check_piece();
+//check_piece();
 //ymove(-(checker_data[0]+checker_data[2]+checker_data[3]*3/2)) check_piece();
 //ymove(-(checker_data[0]+checker_data[2]+checker_data[3]*3/2)) xmove(-(checker_data[0]+checker_data[2]+checker_data[3]/4+check_tol[0]*3/2)) check_piece();
 //xmove(-(checker_data[0]+checker_data[2]+checker_data[3]/4+check_tol[0]*3/2)) check_piece();
 //fully_joined_piece();
 //ymove(-(checker_data[0]+checker_data[2])/2) r_grabber_join_wedge();
-r_grabber();
-l_grabber();
+//r_grabber();
+//l_grabber();
 
-bot_grabber();
-top_grabber();
+//bot_grabber();
+//top_grabber();
+
+ymove(-(checker_data[0]/2+checker_data[2]+checker_data[3]/2)) join_wedge_grabber(grab_side="r");
+
+//ymove((checker_data[0]/2+checker_data[2]+checker_data[3]/2)) xmove((checker_data[0]+checker_data[1])/4) yrot(180) zmove(-checker_data[3]/2) join_wedge_grabber(grab_side="l");
 
 //ymove(-(checker_data[0]/2+checker_data[2]+checker_data[3]/2)) xmove((-checker_data[0]/4-checker_data[4]*2)-checker_data[0]) zmove(checker_data[3]/2) { 
 //      join_wedge_two_side();
