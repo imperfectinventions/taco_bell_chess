@@ -8,6 +8,9 @@ base_packet_data = [75.9, 39.8, 0.3, 12, 6.4];
 
 packet_tol = [0.4, 0.6];
 
+//[wall between base_hooks_thick]
+all_data = [2, 2];
+
 //wall thick
 pawn_data = [4, base_packet_data[1]/4];
 
@@ -48,10 +51,14 @@ module base_sauce_adj() {
   zmove(base_packet_data[0]/2) children();
 }
 
+module back_hook_adj(hook_side="l", cut=false) {
+  xmove(-packet_tol[0]-pawn_data[0]+(cut ? packet_tol[0]/4 : 0)) ymove((hook_side=="l" ? 1 : -1 )*( base_packet_data[1]/2-pawn_data[1]/2-pawn_data[0]-all_data[0])) children();
+}
+
 module back_hook(cut=false, hook_side="l") {
   diff("back_hook_main_cuts") {
-     xmove(-packet_tol[0]-pawn_data[0]+(cut ? packet_tol[1]/4 : 0)) ymove((hook_side=="l" ? 1 : -1 )*( base_packet_data[1]/2-pawn_data[1]/2-pawn_data[0])) {
-       zrot(90) pie_slice(r=(pawn_data[1]+(cut ? packet_tol[1] : 0))/2, ang=180, h=base_packet_data[0]+pawn_data[0]);
+     back_hook_adj(hook_side=hook_side, cut=cut) {
+       zrot(90) pie_slice(r=(pawn_data[1]+(cut ? packet_tol[0] : 0))/2, ang=180, h=base_packet_data[0]+pawn_data[0]);
        if (!cut) {
          tag("back_hook_main_cuts") {
            for (j=[0, 1]) {
@@ -67,8 +74,8 @@ module back_hook(cut=false, hook_side="l") {
 
 module back_hook_king(cut=false, hook_side="l") {
   diff("back_hook_king_main_cuts") {
-     xmove(-packet_tol[0]-pawn_data[0]+(cut ? packet_tol[1]/4 : 0)) ymove((hook_side=="l" ? 1 : -1 )*( base_packet_data[1]/2-pawn_data[1]/2-pawn_data[0])) {
-       zrot(90) pie_slice(r=(pawn_data[1]+(cut ? packet_tol[1] : 0))/2, ang=180, h=king_data[0]+pawn_data[0]);
+     xmove(-packet_tol[0]-pawn_data[0]+(cut ? packet_tol[0]/4 : 0)) ymove((hook_side=="l" ? 1 : -1 )*( base_packet_data[1]/2-pawn_data[1]/2-pawn_data[0]-all_data[0])) {
+       zrot(90) pie_slice(r=(pawn_data[1]+(cut ? packet_tol[0] : 0))/2, ang=180, h=king_data[0]+pawn_data[0]);
        if (!cut) {
          tag("back_hook_king_main_cuts") {
            for (j=[0, 1]) {
@@ -84,8 +91,8 @@ module back_hook_king(cut=false, hook_side="l") {
 
 module back_hook_queen(cut=false, hook_side="l") {
   diff("back_hook_queen_main_cuts") {
-     xmove(-packet_tol[0]-pawn_data[0]+(cut ? packet_tol[1]/4 : 0)) ymove((hook_side=="l" ? 1 : -1 )*( base_packet_data[1]/2-pawn_data[1]/2-pawn_data[0])) {
-       zrot(90) pie_slice(r=(pawn_data[1]+(cut ? packet_tol[1] : 0))/2, ang=180, h=queen_data[0]+pawn_data[0]);
+     xmove(-packet_tol[0]-pawn_data[0]+(cut ? packet_tol[0]/4 : 0)) ymove((hook_side=="l" ? 1 : -1 )*( base_packet_data[1]/2-pawn_data[1]/2-pawn_data[0]-all_data[0])) {
+       zrot(90) pie_slice(r=(pawn_data[1]+(cut ? packet_tol[0] : 0))/2, ang=180, h=queen_data[0]+pawn_data[0]);
        if (!cut) {
          tag("back_hook_queen_main_cuts") {
            for (j=[0, 1]) {
@@ -97,9 +104,6 @@ module back_hook_queen(cut=false, hook_side="l") {
        }
      }
   }
-}
-
-module back_hook_adj(cut=false) {
 }
 
 module pawn_base() {
@@ -140,13 +144,32 @@ module pawn_top() {
       zmove(base_packet_data[0]+base_packet_data[1]/4-base_packet_data[4]) {
         zmove(-base_packet_data[1]/4-base_packet_data[1]/8) cuboid([base_packet_data[1], base_packet_data[1], base_packet_data[1]/4]);
         xmove(-base_packet_data[2]*2) zmove(-base_packet_data[4]*3/2) zrot(90) wedge([base_packet_data[1]*2, base_packet_data[2]*3, base_packet_data[4]], center=true);
+          
+        //chamfer for easier base hook insert
+        zmove(-base_packet_data[1]/2+base_packet_data[4]+all_data[1]*3/2+packet_tol[0]*3/2) {
+            back_hook_chamfer(hook_side="l");
+            back_hook_chamfer(hook_side="r");
+        }
       }
       //the back hooks
       back_hook(cut=true, hook_side="l");
       back_hook(cut=true, hook_side="r");
       //the sauce packet cut
       base_sauce_adj() base_sauce_box(y_ext_long=true, cut=true);
+        
     }
+  }
+}
+
+module back_hook_chamfer(hook_side="l") {
+   back_hook_adj(hook_side=hook_side, cut=true) { 
+     xmove(-0.1) zmove(-all_data[1]/2) xrot(90) linear_extrude((pawn_data[1]+packet_tol[0]), center=true) right_triangle([all_data[1],all_data[1]]);
+    
+     zmove(all_data[1]/4) zrot(90) rotate_extrude(angle=180) xmove((pawn_data[1]+packet_tol[1]*2)/2) right_triangle([all_data[1],all_data[1]], center=true);
+       
+      for (i=[1, -1]) {
+        xmove((all_data[1]/4-0.1)) ymove(i*((pawn_data[1]+packet_tol[1]*2)/2+all_data[1]/4)) zrot((i==-1) ? 180 : 0) yrot(270) linear_extrude(all_data[1]/2, center=true) right_triangle([all_data[1],all_data[1]], center=true);
+      }
   }
 }
 
@@ -195,7 +218,14 @@ module bishop_top() {
     }
     tag("bishop_top_main_cuts") {
       //the chop off the bot sphere
-      zmove(base_packet_data[0]+base_packet_data[1]/4-base_packet_data[4]) zmove(-base_packet_data[1]/4-base_packet_data[1]/8) cuboid([base_packet_data[1], base_packet_data[1], base_packet_data[1]/4]);
+      zmove(base_packet_data[0]+base_packet_data[1]/4-base_packet_data[4]) {
+          zmove(-base_packet_data[1]/4-base_packet_data[1]/8) cuboid([base_packet_data[1], base_packet_data[1], base_packet_data[1]/4]);
+         //chamfer for easier base hook insert
+         zmove(-base_packet_data[1]/2+base_packet_data[4]+all_data[1]*3/2+packet_tol[0]*3/2) {
+            back_hook_chamfer(hook_side="l");
+            back_hook_chamfer(hook_side="r");
+        }   
+      }
       //the back hooks
       back_hook(cut=true, hook_side="l");
       back_hook(cut=true, hook_side="r");
@@ -204,6 +234,7 @@ module bishop_top() {
       zmove(base_packet_data[0]+base_packet_data[1]/4-base_packet_data[4]) ymove(-base_packet_data[1]/4) {
         zmove(base_packet_data[1]/2) xrot(30) cuboid([base_packet_data[1]*2, base_packet_data[1]/8, base_packet_data[1]], rounding=pawn_data[0]/4);
         xmove(-base_packet_data[2]*2) zmove(-base_packet_data[4]*3/2) zrot(90) wedge([base_packet_data[1]*2, base_packet_data[2]*3, base_packet_data[4]], center=true);
+         
       }
     }
   }
@@ -227,6 +258,12 @@ module rook_top() {
       zmove(base_packet_data[0]+base_packet_data[1]/4-base_packet_data[4]) {
         zmove(-base_packet_data[1]/4-base_packet_data[1]/8) cuboid([base_packet_data[1], base_packet_data[1], base_packet_data[1]/4]);
         xmove(-base_packet_data[2]*2) zmove(-base_packet_data[4]*3/2) zrot(90) wedge([base_packet_data[1]*2, base_packet_data[2]*3, base_packet_data[4]], center=true);
+          
+         //chamfer for easier base hook insert
+         zmove(-base_packet_data[1]/2+base_packet_data[4]+all_data[1]*3/2+packet_tol[0]*3/2) {
+            back_hook_chamfer(hook_side="l");
+            back_hook_chamfer(hook_side="r");
+        }
       }
       //the back hooks
       back_hook(cut=true, hook_side="l");
@@ -244,6 +281,7 @@ module queen_top() {
       zmove((base_packet_data[1]/8)) curve_cap((base_packet_data[1]-base_packet_data[1]/16), base_packet_data[1]*3/16);
     //the sphere at the top
     zmove((base_packet_data[1]/8+base_packet_data[1]*3/16)) sphere(r=base_packet_data[1]/8);
+        
     difference() {
         ymove() {
           cyl(r=base_packet_data[1]*3/4, h=base_packet_data[1]/2);
@@ -271,7 +309,16 @@ module queen_top() {
     }
     tag("queen_top_main_cuts") {
       //the chop off the bot sphere
-      zmove(base_packet_data[0]+base_packet_data[1]/4-base_packet_data[4]) zmove(-base_packet_data[1]/4-base_packet_data[1]/8) cuboid([base_packet_data[1], base_packet_data[1], base_packet_data[1]/4]);
+      zmove(base_packet_data[0]+base_packet_data[1]/4-base_packet_data[4]) {
+          zmove(-base_packet_data[1]/4-base_packet_data[1]/8) cuboid([base_packet_data[1], base_packet_data[1], base_packet_data[1]/4]);
+          
+         xmove(-base_packet_data[2]*2) zmove(-base_packet_data[4]*3/2) zrot(90) wedge([base_packet_data[1]*2, base_packet_data[2]*3, base_packet_data[4]], center=true);
+         //chamfer for easier base hook insert
+         zmove(-base_packet_data[1]/2+base_packet_data[4]+all_data[1]*3/2+packet_tol[0]*3/2) {
+            back_hook_chamfer(hook_side="l");
+            back_hook_chamfer(hook_side="r");
+        }
+      }
       //the back hooks
       back_hook(cut=true, hook_side="l");
       back_hook(cut=true, hook_side="r");
@@ -308,7 +355,16 @@ module king_top() {
     }
     tag("king_top_main_cuts") {
       //the chop off the bot sphere
-      zmove(base_packet_data[0]+base_packet_data[1]/4-base_packet_data[4]) zmove(-base_packet_data[1]/4-base_packet_data[1]/8) cuboid([base_packet_data[1], base_packet_data[1], base_packet_data[1]/4]);
+      zmove(base_packet_data[0]+base_packet_data[1]/4-base_packet_data[4]) {
+          zmove(-base_packet_data[1]/4-base_packet_data[1]/8) cuboid([base_packet_data[1], base_packet_data[1], base_packet_data[1]/4]);
+          
+         xmove(-base_packet_data[2]*2) zmove(-base_packet_data[4]*3/2) zrot(90) wedge([base_packet_data[1]*2, base_packet_data[2]*3, base_packet_data[4]], center=true);
+         //chamfer for easier base hook insert
+         zmove(-base_packet_data[1]/2+base_packet_data[4]+all_data[1]*3/2+packet_tol[0]*3/2) {
+            back_hook_chamfer(hook_side="l");
+            back_hook_chamfer(hook_side="r");
+        }
+      }
       //the back hooks
       back_hook(cut=true, hook_side="l");
       back_hook(cut=true, hook_side="r");
@@ -351,6 +407,7 @@ module king_bell_crown() {
 
 //back_hook_king(cut=false, hook_side="l");
 //back_hook_queen(cut=false, hook_side="l");
+//back_hook_queen(cut=false, hook_side="r");
 
 //king_bell_crown();
 
@@ -363,5 +420,6 @@ module king_bell_crown() {
 //color("blue") back_hook(hook_side="l");
 //back_hook(hook_side="l");
 //bishop_top();
-pawn_top();
+//pawn_top();
+//back_hook_chamfer(hook_side="l");
 //rook_top();
